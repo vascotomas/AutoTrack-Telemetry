@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AutoTelemetry.Infrastructure\AutoTelemetryAPI.Infrastructure.csproj" />
+    <ProjectReference Include="..\AutoTelemetryAPI.Infrastructure\AutoTelemetryAPI.Infrastructure.csproj" />
     <ProjectReference Include="..\AutoTelemetryAPI.Entities\AutoTelemetryAPI.Entities.csproj" />
   </ItemGroup>
 

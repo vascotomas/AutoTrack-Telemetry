@@ -1,6 +1,6 @@
 <Solution>
   <Project Path="AutoTelemetry.API/AutoTelemetryAPI.csproj" />
-  <Project Path="AutoTelemetry.Infrastructure/AutoTelemetryAPI.Infrastructure.csproj" />
   <Project Path="AutoTelemetryAPI.Entities/AutoTelemetryAPI.Entities.csproj" />
+  <Project Path="AutoTelemetryAPI.Infrastructure/AutoTelemetryAPI.Infrastructure.csproj" />
   <Project Path="AutoTelemetryWorker/AutoTelemetryWorker.csproj" />
 </Solution>

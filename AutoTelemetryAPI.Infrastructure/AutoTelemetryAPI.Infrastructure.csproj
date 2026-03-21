@@ -16,7 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AutoTelemetryAPI.Entities\AutoTelemetryAPI.Entities.csproj" />
-    <ProjectReference Include="..\Core\AutoTelemetryAPI.Entities.csproj" />
   </ItemGroup>
 
 </Project>
