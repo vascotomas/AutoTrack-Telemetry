@@ -1,0 +1,15 @@
+@AutoTelemetry.API_HostAddress = http://localhost:5155
+
+# GET {{AutoTelemetry.API_HostAddress}}/weatherforecast/
+# Accept: application/json
+
+POST {{AutoTelemetry.API_HostAddress}}/api/telemetry
+Content-Type: application/json
+
+{
+  "chasisId": "CH-1088",
+  "estacion": "Pintura",
+  "temperatura": 95.5
+}
+
+###
