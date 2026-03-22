@@ -1,5 +1,7 @@
 using AutoTelemetry.Infrastructure.Context;
 using AutoTelemetryAPI.Entities.Entities;
+using AutoTelemetryAPI.Features.NotificationsTelemetry;
+using AutoTelemetryWorker.Interfaces;
 using AutoTelemetryWorker.Processor;
 using AutoTelemetryWorker.Worker;
 using FastEndpoints;
@@ -39,6 +41,9 @@ builder.Services.AddSingleton(Channel.CreateBounded<QueueMessage>(
 
 builder.Services.AddScoped<TelemetryProcessor>();
 builder.Services.AddHostedService<JobWorker>();
+builder.Services.AddSignalR();
+
+builder.Services.AddScoped<ITelemetryNotifier, SignalRNotifier>();
 
 var app = builder.Build();
 
@@ -58,7 +63,7 @@ app.UseHttpsRedirection();
 app.UseRateLimiter();
 app.UseFastEndpoints();
 app.MapHealthChecks("/health");
-
+app.MapHub<HubTelemetry>("/telemetryHub");
 
 try
 {

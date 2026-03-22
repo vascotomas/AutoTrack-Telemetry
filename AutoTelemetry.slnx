@@ -2,5 +2,6 @@
   <Project Path="AutoTelemetry.API/AutoTelemetryAPI.csproj" />
   <Project Path="AutoTelemetryAPI.Entities/AutoTelemetryAPI.Entities.csproj" />
   <Project Path="AutoTelemetryAPI.Infrastructure/AutoTelemetryAPI.Infrastructure.csproj" />
+  <Project Path="AutoTelemetryUI/AutoTelemetryUI.csproj" Id="bdbc14a5-39fb-4066-a7bc-2ac8b992a3e3" />
   <Project Path="AutoTelemetryWorker/AutoTelemetryWorker.csproj" />
 </Solution>
