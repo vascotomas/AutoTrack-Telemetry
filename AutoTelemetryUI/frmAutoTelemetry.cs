@@ -3,9 +3,11 @@ using Microsoft.AspNetCore.SignalR.Client;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Configuration;
 using System.Data;
 using System.Data.Common;
 using System.Drawing;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Windows.Forms;
@@ -13,40 +15,39 @@ namespace AutoTelemetryUI
 {
     public partial class frmAutoTelemetry : Form
     {
-        private HubConnection _hubConnection;
-        private static readonly HttpClient _httpClient = new HttpClient { BaseAddress = new Uri("https://localhost:7105/") };
-        public frmAutoTelemetry()
+        private readonly string _token;
+        private HubConnection? _hubConnection;
+        private static HttpClient _httpClient;
+        private static string apiUrl;
+        public frmAutoTelemetry(string token)
         {
             InitializeComponent();
-            ConfigurarControles(); // <-- Agregamos esto
+            _token = token;
+            ConfigurarConexiones();
+            ConfigurarControles();
             ConfigurarGrilla();
             ConfigurarSignalRAsync();
         }
-
+        private void ConfigurarConexiones()
+        {
+            apiUrl = ConfigurationManager.AppSettings["ApiUrl"] ?? "https://localhost:7105";
+            _httpClient = new HttpClient { BaseAddress = new Uri(apiUrl) };
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
+        }
         private void ConfigurarControles()
         {
             cmbEstacion.DataSource = Enum.GetValues(typeof(Enums.Enums.Estacion));
             cmbEstacion.SelectedIndex = -1;
         }
-
-        private void ConfigurarGrilla()
-        {
-            dgvTelemetria.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgvTelemetria.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvTelemetria.BackgroundColor = Color.White;
-            dgvTelemetria.BorderStyle = BorderStyle.None;
-
-            dgvTelemetria.Columns.Add("ChasisId", "ID Chasis");
-            dgvTelemetria.Columns.Add("Estacion", "Estación");
-            dgvTelemetria.Columns.Add("Temperatura", "Temperatura (°C)");
-            dgvTelemetria.Columns.Add("Estado", "Estado");
-        }
         private async void ConfigurarSignalRAsync()
         {
             _hubConnection = new HubConnectionBuilder()
-                .WithUrl("https://localhost:7105/telemetryHub")
-                .WithAutomaticReconnect()
-                .Build();
+                                                      .WithUrl($"{apiUrl}/telemetryHub", options =>
+                                                      {
+                                                          options.AccessTokenProvider = () => Task.FromResult(_token);
+                                                      })
+                                                      .WithAutomaticReconnect()
+                                                      .Build();
 
             _hubConnection.On<string, string>("TelemetryProcessed", (chasisId, nuevoEstado) =>
             {
@@ -59,14 +60,25 @@ namespace AutoTelemetryUI
             try
             {
                 await _hubConnection.StartAsync();
-                this.Text = "Panel de Telemetría - 🟢 Conectado (SignalR)";
+                this.Text = "Panel de Telemetría - Conectado (SignalR)";
             }
             catch (Exception)
             {
-                this.Text = "Panel de Telemetría - 🔴 Desconectado";
+                this.Text = "Panel de Telemetría - Desconectado";
             }
         }
+        private void ConfigurarGrilla()
+        {
+            dgvTelemetria.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvTelemetria.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvTelemetria.BackgroundColor = Color.White;
+            dgvTelemetria.BorderStyle = BorderStyle.None;
 
+            dgvTelemetria.Columns.Add("ChasisId", "ID Chasis");
+            dgvTelemetria.Columns.Add("Estacion", "Estación");
+            dgvTelemetria.Columns.Add("Temperatura", "Temperatura (°C)");
+            dgvTelemetria.Columns.Add("Estado", "Estado");
+        }
         private async void btnSend_Click(object sender, EventArgs e)
         {
             var chasis = txtChasis.Text;
@@ -128,7 +140,7 @@ namespace AutoTelemetryUI
                         row.DefaultCellStyle.BackColor = Color.Salmon;
                         row.DefaultCellStyle.ForeColor = Color.White;
                     }
-                    else if(nuevoEstado.Contains("Error"))
+                    else if (nuevoEstado.Contains("Error"))
                     {
                         row.Cells["Estado"].Value = nuevoEstado;
                         row.DefaultCellStyle.BackColor = Color.LightCoral;

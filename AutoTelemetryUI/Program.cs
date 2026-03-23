@@ -8,10 +8,18 @@ namespace AutoTelemetryUI
         [STAThread]
         static void Main()
         {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
-            ApplicationConfiguration.Initialize();
-            Application.Run(new frmAutoTelemetry());
+            var login = new frmLogin();
+
+            if (login.ShowDialog() == DialogResult.OK)
+            {
+                string token = login.AccessToken;
+
+                Application.Run(new frmAutoTelemetry(token));
+            }
+            else
+            {
+                Application.Exit();
+            }
         }
     }
 }
