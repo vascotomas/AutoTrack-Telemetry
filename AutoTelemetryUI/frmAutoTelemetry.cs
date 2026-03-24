@@ -1,24 +1,16 @@
-﻿using AutoTelemetryUI.Enums;
+﻿using AutoTelemetryEntities.Enums;
 using Microsoft.AspNetCore.SignalR.Client;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Configuration;
-using System.Data;
-using System.Data.Common;
-using System.Drawing;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text;
-using System.Windows.Forms;
+using ClientSDK;
 namespace AutoTelemetryUI
 {
     public partial class frmAutoTelemetry : Form
     {
         private readonly string _token;
         private HubConnection? _hubConnection;
-        private static HttpClient _httpClient;
         private static string apiUrl;
+        private Client _apiClient;
         public frmAutoTelemetry(string token)
         {
             InitializeComponent();
@@ -31,12 +23,11 @@ namespace AutoTelemetryUI
         private void ConfigurarConexiones()
         {
             apiUrl = ConfigurationManager.AppSettings["ApiUrl"] ?? "https://localhost:7105";
-            _httpClient = new HttpClient { BaseAddress = new Uri(apiUrl) };
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
+            _apiClient = new Client(apiUrl, _token);
         }
         private void ConfigurarControles()
         {
-            cmbEstacion.DataSource = Enum.GetValues(typeof(Enums.Enums.Estacion));
+            cmbEstacion.DataSource = Enum.GetValues(typeof(Estacion));
             cmbEstacion.SelectedIndex = -1;
         }
         private async void ConfigurarSignalRAsync()
@@ -49,12 +40,15 @@ namespace AutoTelemetryUI
                                                       .WithAutomaticReconnect()
                                                       .Build();
 
-            _hubConnection.On<string, string>("TelemetryProcessed", (chasisId, nuevoEstado) =>
+            _hubConnection.On<Guid, EstadoTelemetria>("TelemetryProcessed", (idTransaccion, estado) =>
             {
-                this.Invoke((MethodInvoker)delegate
+                if (Enum.TryParse<EstadoTelemetria>(estado.ToString(), out var estadoEnum))
                 {
-                    ActualizarFilaGrilla(chasisId, nuevoEstado);
-                });
+                    this.Invoke((MethodInvoker)delegate
+                    {
+                        ActualizarFilaGrilla(idTransaccion, estadoEnum);
+                    });
+                }
             });
 
             try
@@ -74,6 +68,8 @@ namespace AutoTelemetryUI
             dgvTelemetria.BackgroundColor = Color.White;
             dgvTelemetria.BorderStyle = BorderStyle.None;
 
+            dgvTelemetria.Columns.Add("IdTransaccion", "ID Transacción");
+            dgvTelemetria.Columns["IdTransaccion"]?.Visible = false;
             dgvTelemetria.Columns.Add("ChasisId", "ID Chasis");
             dgvTelemetria.Columns.Add("Estacion", "Estación");
             dgvTelemetria.Columns.Add("Temperatura", "Temperatura (°C)");
@@ -91,11 +87,21 @@ namespace AutoTelemetryUI
                 return;
             }
 
-            int rowIndex = dgvTelemetria.Rows.Add(chasis, estacion, temp, "Enviando...");
+            var idTransaccion = Guid.NewGuid();
+
+            int rowIndex = dgvTelemetria.Rows.Add(
+                                                    idTransaccion,
+                                                    chasis,
+                                                    estacion,
+                                                    temp,
+                                                    EstadoTelemetria.Enviando.ToString()
+                                                );
+
             dgvTelemetria.Rows[rowIndex].DefaultCellStyle.BackColor = Color.LightYellow;
 
             var payload = new
             {
+                Id = idTransaccion,
                 ChasisId = chasis,
                 Estacion = estacion,
                 Temperatura = temp
@@ -104,20 +110,22 @@ namespace AutoTelemetryUI
             btnSend.Enabled = false;
             try
             {
-                var response = await _httpClient.PostAsJsonAsync("api/telemetry", payload);
-                if (response.IsSuccessStatusCode)
+                var response = await _apiClient.EnviarChasisAsync(payload);
+                if (response.IsSuccess)
                 {
-                    dgvTelemetria.Rows[rowIndex].Cells["Estado"].Value = "Pendiente (En Cola)";
+                    dgvTelemetria.Rows[rowIndex].Cells["Estado"].Value = EstadoTelemetria.Pendiente.ToString();
                 }
                 else
                 {
-                    dgvTelemetria.Rows[rowIndex].Cells["Estado"].Value = "Error HTTP";
+                    MessageBox.Show(response.ErrorMessage, "Error de Envío", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                    dgvTelemetria.Rows[rowIndex].Cells["Estado"].Value = EstadoTelemetria.Error_HTTP.ToString();
                     dgvTelemetria.Rows[rowIndex].DefaultCellStyle.BackColor = Color.LightCoral;
                 }
             }
             catch (Exception)
             {
-                dgvTelemetria.Rows[rowIndex].Cells["Estado"].Value = "Error de Conexión";
+                dgvTelemetria.Rows[rowIndex].Cells["Estado"].Value = EstadoTelemetria.Error_Conexion.ToString();
                 dgvTelemetria.Rows[rowIndex].DefaultCellStyle.BackColor = Color.LightCoral;
             }
             finally
@@ -127,29 +135,32 @@ namespace AutoTelemetryUI
             }
         }
 
-        private void ActualizarFilaGrilla(string chasisId, string nuevoEstado)
+        private void ActualizarFilaGrilla(Guid idTransaccion, EstadoTelemetria nuevoEstado)
         {
             foreach (DataGridViewRow row in dgvTelemetria.Rows)
             {
-                if (row.Cells["ChasisId"].Value?.ToString() == chasisId)
+                if (row.Cells["IdTransaccion"].Value is Guid idFila && idFila == idTransaccion)
                 {
-                    row.Cells["Estado"].Value = nuevoEstado;
+                    row.Cells["Estado"].Value = nuevoEstado.ToString().Replace("_", " ");
 
-                    if (nuevoEstado == "Alerta_Temperatura")
+                    switch (nuevoEstado)
                     {
-                        row.DefaultCellStyle.BackColor = Color.Salmon;
-                        row.DefaultCellStyle.ForeColor = Color.White;
+                        case EstadoTelemetria.Alerta_Temperatura:
+                            row.DefaultCellStyle.BackColor = Color.Salmon;
+                            row.DefaultCellStyle.ForeColor = Color.White;
+                            break;
+                        case EstadoTelemetria.Error_Duplicado:
+                        case EstadoTelemetria.Error_Conexion:
+                        case EstadoTelemetria.Error_HTTP:
+                            row.DefaultCellStyle.BackColor = Color.LightCoral;
+                            row.DefaultCellStyle.ForeColor = Color.Black;
+                            break;
+                        case EstadoTelemetria.Procesado:
+                            row.DefaultCellStyle.BackColor = Color.LightGreen;
+                            row.DefaultCellStyle.ForeColor = Color.Black;
+                            break;
                     }
-                    else if (nuevoEstado.Contains("Error"))
-                    {
-                        row.Cells["Estado"].Value = nuevoEstado;
-                        row.DefaultCellStyle.BackColor = Color.LightCoral;
-                    }
-                    else
-                    {
-                        row.DefaultCellStyle.BackColor = Color.LightGreen;
-                        row.DefaultCellStyle.ForeColor = Color.Black;
-                    }
+
                     break;
                 }
             }

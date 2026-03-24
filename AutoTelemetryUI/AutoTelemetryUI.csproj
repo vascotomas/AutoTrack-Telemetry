@@ -10,6 +10,13 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.5" />
+    <PackageReference Include="Serilog" Version="4.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AutoTelemetryCommon\AutoTelemetryCommon.csproj" />
+    <ProjectReference Include="..\ClientSDK\ClientSDK.csproj" />
+    <ProjectReference Include="..\AutoTelemetryEntities\AutoTelemetryEntities.csproj" />
   </ItemGroup>
 
 </Project>

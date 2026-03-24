@@ -2,6 +2,7 @@
 {
     public class IngestTelemetryRequest
     {
+        public Guid Id { get; set; }
         public string ChasisId { get; set; } = string.Empty;
         public string Estacion { get; set; } = string.Empty;
         public double Temperatura { get; set; }

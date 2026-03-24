@@ -1,4 +1,5 @@
 ﻿using AutoTelemetryAPI.Entities.Entities;
+using AutoTelemetryEntities.Enums;
 using FastEndpoints;
 using System.Threading.Channels;
 
@@ -25,11 +26,12 @@ namespace AutoTelemetryAPI.Features.IngestTelemetry
         {
             var telemetryEvent = new TelemetryEvent
             {
+                Id = req.Id,
                 ChasisId = req.ChasisId,
                 Estacion = req.Estacion,
                 Temperatura = req.Temperatura,
                 Timestamp = DateTime.UtcNow,
-                Estado = "Pendiente"
+                Estado = EstadoTelemetria.Pendiente
             };
             var msg = new QueueMessage { Job = telemetryEvent };
 

@@ -31,7 +31,7 @@ namespace AutoTelemetryUI
                     {
                         {"grant_type", "password"},
                         {"client_id", "3d6f9a1c-4f64-49f8-b8e5-0a7c4e97f017"},
-                        {"client_secret", "secreto123"}, // Texto plano, el servidor se encarga de hashearlo
+                        {"client_secret", "secreto123"},
                         {"username", txtUser.Text},
                         {"password", txtPassword.Text},
                         {"scope", "AutoTelemetry"}

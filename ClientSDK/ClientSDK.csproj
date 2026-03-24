@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AutoTelemetryEntities\AutoTelemetryEntities.csproj" />
+    <PackageReference Include="Polly" Version="8.6.6" />
   </ItemGroup>
 
 </Project>

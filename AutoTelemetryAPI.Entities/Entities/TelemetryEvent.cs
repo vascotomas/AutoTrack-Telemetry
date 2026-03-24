@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using AutoTelemetryEntities.Enums;
 
 namespace AutoTelemetryAPI.Entities.Entities
 {
@@ -11,6 +12,6 @@ namespace AutoTelemetryAPI.Entities.Entities
         public string Estacion { get; set; } = string.Empty;
         public double Temperatura { get; set; }
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-        public string Estado { get; set; } = "Pendiente";
+        public  EstadoTelemetria Estado { get; set; } = EstadoTelemetria.Pendiente;
     }
 }

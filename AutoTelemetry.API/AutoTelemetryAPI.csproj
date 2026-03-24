@@ -27,7 +27,9 @@
   <ItemGroup>
     <ProjectReference Include="..\AutoTelemetryAPI.Infrastructure\AutoTelemetryAPI.Infrastructure.csproj" />
     <ProjectReference Include="..\AutoTelemetryAPI.Entities\AutoTelemetryAPI.Entities.csproj" />
+    <ProjectReference Include="..\AutoTelemetryCommon\AutoTelemetryCommon.csproj" />
     <ProjectReference Include="..\AutoTelemetryWorker\AutoTelemetryWorker.csproj" />
+    <ProjectReference Include="..\AutoTelemetryEntities\AutoTelemetryEntities.csproj" />
   </ItemGroup>
 
 </Project>

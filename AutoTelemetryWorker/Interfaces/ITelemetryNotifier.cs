@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AutoTelemetryEntities.Enums;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -6,6 +7,6 @@ namespace AutoTelemetryWorker.Interfaces
 {
     public interface ITelemetryNotifier
     {
-        Task NotifyStatusChangedAsync(string chasisId, string nuevoEstado, CancellationToken ct);
+        Task NotifyStatusChangedAsync(Guid id, EstadoTelemetria nuevoEstado, CancellationToken ct);
     }
 }
