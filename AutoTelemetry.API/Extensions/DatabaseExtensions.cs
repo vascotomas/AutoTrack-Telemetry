@@ -1,4 +1,5 @@
-﻿using AutoTelemetryInfrastructure.Context;
+using AutoTelemetryInfrastructure.Context;
+using Microsoft.EntityFrameworkCore;
 
 namespace AutoTelemetryAPI.Extensions
 {

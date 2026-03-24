@@ -1,4 +1,6 @@
 using AutoTelemetryCommon;
+using ClientSDK;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 namespace AutoTelemetryUI
 {
@@ -15,7 +17,12 @@ namespace AutoTelemetryUI
             Application.SetCompatibleTextRenderingDefault(false);
             Log.Logger = LoggerSetup.Configure("WinForms_UI");
 
-            var login = new frmLogin();
+            var services = new ServiceCollection();
+            services.AddHttpClient<Client>();
+            services.AddTransient<frmLogin>();
+            services.AddTransient<frmAutoTelemetry>();
+            using var serviceProvider = services.BuildServiceProvider();
+
 
             Application.ThreadException += (sender, args) =>
             {
@@ -30,18 +37,15 @@ namespace AutoTelemetryUI
                 }
             };
 
-          
+            var login = serviceProvider.GetRequiredService<frmLogin>();
 
             if (login.ShowDialog() == DialogResult.OK)
             {
-                string token = login.AccessToken;
-
-                Application.Run(new frmAutoTelemetry(token));
+                var mainForm = serviceProvider.GetRequiredService<frmAutoTelemetry>();
+                mainForm.ConfigurarToken(login.AccessToken);
+                Application.Run(mainForm);
             }
-            else
-            {
-                Application.Exit();
-            }
+            Log.CloseAndFlush();
         }
 
         private static void MostrarError(Exception ex)

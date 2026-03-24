@@ -20,7 +20,6 @@ namespace AutoTelemetryAPI.Features.IngestTelemetry
         public override void Configure()
         {
             Post("/api/telemetry");
-            AllowAnonymous();
             Options(x => x.RequireRateLimiting("telemetry-policy"));
         }
         public override async Task HandleAsync(IngestTelemetryRequest req, CancellationToken ct)

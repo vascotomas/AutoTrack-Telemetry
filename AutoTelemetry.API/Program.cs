@@ -8,9 +8,12 @@ using AutoTelemetryInfrastructure.Repository;
 using AutoTelemetryWorker.Processor;
 using AutoTelemetryWorker.Worker;
 using FastEndpoints;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using System.Text;
 using System.Threading.Channels;
 using System.Threading.RateLimiting;
 
@@ -22,6 +25,19 @@ try
     var builder = WebApplication.CreateBuilder(args);
     builder.Host.UseSerilog();
 
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+      .AddJwtBearer(options =>
+      {
+          options.Authority = "http://localhost:7173";
+          options.RequireHttpsMetadata = false;
+          options.TokenValidationParameters = new TokenValidationParameters
+          {
+              ValidateAudience = false,
+              ValidateIssuer = true
+          };
+      });
+
+    builder.Services.AddAuthorization();
     builder.Services.AddFastEndpoints();
     builder.Services.AddOpenApi();
     builder.Services.AddHealthChecks();
@@ -53,7 +69,8 @@ try
 
     // CONSTRUCCIÓN DE LA APP
     var app = builder.Build();
-
+    app.UseAuthentication();
+    app.UseAuthorization();
     app.InicializarBaseDeDatos();
 
     app.UseSerilogRequestLogging();

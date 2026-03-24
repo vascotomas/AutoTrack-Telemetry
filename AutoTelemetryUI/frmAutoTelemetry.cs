@@ -1,50 +1,59 @@
 ﻿using AutoTelemetryEntities.Enums;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Configuration;
-using System.Net.Http.Json;
 using ClientSDK;
 using AutoTelemetryCommon;
+
 namespace AutoTelemetryUI
 {
     public partial class frmAutoTelemetry : Form
     {
-        private readonly string _token = null!;
-        private static string apiUrl = null!;
-        private Client _apiClient = null!;
+        private string _token = string.Empty;
+        private readonly string apiUrl;       
+        private readonly Client _apiClient;
         private ClientSignalR _clientSignalR = null!;
 
-        public frmAutoTelemetry(string token)
+        public frmAutoTelemetry(Client client)
         {
             InitializeComponent();
-            _token = token;
-            ConfigurarConexiones();
+
+            _apiClient = client;
+            apiUrl = ConfigurationManager.AppSettings["ApiUrl"] ?? "https://localhost:7105";
+
             ConfigurarControles();
             ConfigurarGrilla();
         }
 
-        private async void ConfigurarConexiones()
+        public async void ConfigurarToken(string token)
         {
-            apiUrl = ConfigurationManager.AppSettings["ApiUrl"] ?? "https://localhost:7105";
-            _apiClient = new Client(apiUrl, _token);
+            _token = token;
+
+            _apiClient.SetAuthorizationToken(token);
 
             await IniciarConexionSignalRAsync();
         }
 
         private async Task IniciarConexionSignalRAsync()
         {
-            _clientSignalR = new ClientSignalR($"{apiUrl}/telemetryHub", _token);
-
-            _clientSignalR.SuscribirEvento<Guid, string>("TelemetryProcessed", InvocarActualizacionTelemetria);
-
-            bool conectado = await _clientSignalR.ConectarAsync();
-
-            if (conectado)
+            try
             {
-                this.Text = "Panel de Telemetría - Conectado (SignalR)";
+                _clientSignalR = new ClientSignalR($"{apiUrl}/telemetryHub", _token);
+                _clientSignalR.SuscribirEvento<Guid, string>("TelemetryProcessed", InvocarActualizacionTelemetria);
+
+                bool conectado = await _clientSignalR.ConectarAsync();
+
+                if (conectado)
+                {
+                    this.Text = "Panel de Telemetría - Conectado (SignalR)";
+                }
+                else
+                {
+                    this.Text = "Panel de Telemetría - Desconectado (Fallo interno)";
+                }
             }
-            else
+            catch (Exception)
             {
-                this.Text = "Panel de Telemetría - Desconectado (Trabajando Offline)";
+                this.Text = "Panel de Telemetría - Servidor Offline";
             }
         }
 
@@ -73,7 +82,7 @@ namespace AutoTelemetryUI
             dgvTelemetria.BorderStyle = BorderStyle.None;
 
             dgvTelemetria.Columns.Add("IdTransaccion", "ID Transacción");
-            dgvTelemetria.Columns["IdTransaccion"]?.Visible = false;
+            dgvTelemetria.Columns["IdTransaccion"]!.Visible = false;
             dgvTelemetria.Columns.Add("ChasisId", "ID Chasis");
             dgvTelemetria.Columns.Add("Estacion", "Estación");
             dgvTelemetria.Columns.Add("Temperatura", "Temperatura (°C)");
@@ -95,12 +104,12 @@ namespace AutoTelemetryUI
             var idTransaccion = Guid.NewGuid();
 
             int rowIndex = dgvTelemetria.Rows.Add(
-                                                    idTransaccion,
-                                                    chasis,
-                                                    estacion,
-                                                    temp,
-                                                    EstadoTelemetria.Enviando.ToString()
-                                                );
+                idTransaccion,
+                chasis,
+                estacion,
+                temp,
+                EstadoTelemetria.Enviando.ToString()
+            );
 
             dgvTelemetria.Rows[rowIndex].DefaultCellStyle.BackColor = Color.LightYellow;
 
@@ -115,12 +124,12 @@ namespace AutoTelemetryUI
             btnSend.Enabled = false;
             try
             {
-                var response = await _apiClient.EnviarChasisAsync(payload);
+                var response = await _apiClient.EnviarChasisAsync(apiUrl, payload);
 
                 if (response.IsSuccess)
                 {
                     dgvTelemetria.Rows[rowIndex].Cells["Estado"].Value = EstadoTelemetria.Pendiente.ToString();
-                    dgvTelemetria.Rows[rowIndex].DefaultCellStyle.BackColor = Color.LightYellow; 
+                    dgvTelemetria.Rows[rowIndex].DefaultCellStyle.BackColor = Color.LightYellow;
                 }
                 else
                 {
@@ -128,7 +137,7 @@ namespace AutoTelemetryUI
 
                     MessageBox.Show($"El servidor rechazó el envío:\n\n{mensajeAmigable}", "Error de Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
-                    dgvTelemetria.Rows[rowIndex].Cells["Estado"].Value = EstadoTelemetria.Error_HTTP.ToString();
+                    dgvTelemetria.Rows[rowIndex].Cells["Estado"].Value = EstadoTelemetria.Error_HTTP.ToString().Replace("_", " ");
                     dgvTelemetria.Rows[rowIndex].DefaultCellStyle.BackColor = Color.LightCoral;
                 }
             }
@@ -136,14 +145,13 @@ namespace AutoTelemetryUI
             {
                 MessageBox.Show($"No se pudo conectar con el servidor. Detalle:\n{ex.Message}", "Error de Conexión", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
-                dgvTelemetria.Rows[rowIndex].Cells["Estado"].Value = EstadoTelemetria.Error_Conexion.ToString();
+                dgvTelemetria.Rows[rowIndex].Cells["Estado"].Value = EstadoTelemetria.Error_Conexion.ToString().Replace("_", " ");
                 dgvTelemetria.Rows[rowIndex].DefaultCellStyle.BackColor = Color.LightCoral;
             }
             finally
             {
                 btnSend.Enabled = true;
                 txtChasis.Text = "";
-
                 dgvTelemetria.ClearSelection();
             }
         }
@@ -165,6 +173,7 @@ namespace AutoTelemetryUI
                         case EstadoTelemetria.Error_Duplicado:
                         case EstadoTelemetria.Error_Conexion:
                         case EstadoTelemetria.Error_HTTP:
+                        case EstadoTelemetria.Error_Critico:
                             row.DefaultCellStyle.BackColor = Color.LightCoral;
                             row.DefaultCellStyle.ForeColor = Color.Black;
                             break;

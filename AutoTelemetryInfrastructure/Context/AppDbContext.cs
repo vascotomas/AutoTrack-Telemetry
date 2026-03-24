@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Text;
@@ -21,7 +21,9 @@ namespace AutoTelemetryInfrastructure.Context
 
             modelBuilder.Entity<TelemetryEvent>().HasKey(e => e.Id);
 
-            modelBuilder.Entity<TelemetryEvent>().HasIndex(x => x.ChasisId);
+            modelBuilder.Entity<TelemetryEvent>()
+                .HasIndex(x => x.ChasisId)
+                .IsUnique();
         }
     }
 }

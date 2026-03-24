@@ -21,6 +21,7 @@ namespace AutoTelemetryEntities.Enums
             Alerta_Temperatura,
             Error_Duplicado,
             Error_HTTP,
-            Error_Conexion
-        }   
+            Error_Conexion,
+            Error_Critico
+    }   
 }

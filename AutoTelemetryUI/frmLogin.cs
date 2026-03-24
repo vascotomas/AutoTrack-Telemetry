@@ -1,71 +1,60 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+using System;
 using System.Configuration;
-using System.Data;
-using System.Drawing;
-using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using ClientSDK; // Asegurate de tener la referencia al SDK
 
 namespace AutoTelemetryUI
 {
     public partial class frmLogin : Form
     {
         public string AccessToken { get; private set; } = string.Empty;
-        public frmLogin()
+
+        private readonly Client _apiClient;
+
+        public frmLogin(Client apiClient)
         {
             InitializeComponent();
             this.AcceptButton = btnLogin;
+            _apiClient = apiClient;
         }
 
         private async void btnLogin_Click(object sender, EventArgs e)
         {
             btnLogin.Enabled = false;
             btnLogin.Text = "Autenticando...";
+
             string authUrl = ConfigurationManager.AppSettings["AuthServerUrl"] ?? "http://localhost:5155";
-            var authClient = new HttpClient();
+            string clientSecret = ConfigurationManager.AppSettings["AuthClientSecret"] ?? string.Empty;
 
-            var requestBody = new Dictionary<string, string>
-                    {
-                        {"grant_type", "password"},
-                        {"client_id", "3d6f9a1c-4f64-49f8-b8e5-0a7c4e97f017"},
-                        {"client_secret", "secreto123"},
-                        {"username", txtUser.Text},
-                        {"password", txtPassword.Text},
-                        {"scope", "AutoTelemetry"}
-                    };
-
-            try
+            if (string.IsNullOrWhiteSpace(clientSecret))
             {
-                var response = await authClient.PostAsync($"{authUrl}/connect/token", new FormUrlEncodedContent(requestBody));
+                MessageBox.Show("Falta configurar AuthClientSecret en App.config.", "Configuración inválida", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                RestaurarBoton();
+                return;
+            }
 
-                if (response.IsSuccessStatusCode)
-                {
-                    var jsonStr = await response.Content.ReadAsStringAsync();
-                    using var doc = JsonDocument.Parse(jsonStr);
+            var authResult = await _apiClient.LoginAsync(authUrl, txtUser.Text, txtPassword.Text, clientSecret);
 
-                     AccessToken = doc.RootElement.GetProperty("access_token").GetString() ?? string.Empty;
-                    this.DialogResult = DialogResult.OK;
-                    this.Close();
-                }
-                else
-                {
-                    MessageBox.Show("Credenciales incorrectas.", "Acceso Denegado", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    txtPassword.Text = "";
-                    txtPassword.Focus();
-                }
-            }
-            catch (Exception ex)
+            if (authResult.IsSuccess)
             {
-                MessageBox.Show($"No se pudo conectar al servidor de autenticación.\nDetalle: {ex.Message}", "Error de Red", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                AccessToken = authResult.AccessToken;
+                this.DialogResult = DialogResult.OK;
+                this.Close();
             }
-            finally
+            else
             {
-                btnLogin.Enabled = true;
-                btnLogin.Text = "Ingresar";
+                MessageBox.Show(authResult.ErrorMessage, "Acceso Denegado", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtPassword.Text = "";
+                txtPassword.Focus();
+                RestaurarBoton();
             }
+        }
+
+        private void RestaurarBoton()
+        {
+            btnLogin.Enabled = true;
+            btnLogin.Text = "Ingresar";
         }
     }
 }
