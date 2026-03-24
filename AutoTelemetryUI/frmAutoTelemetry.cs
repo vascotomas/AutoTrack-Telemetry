@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using System.Configuration;
 using System.Net.Http.Json;
 using ClientSDK;
+using AutoTelemetryCommon;
 namespace AutoTelemetryUI
 {
     public partial class frmAutoTelemetry : Form
@@ -61,7 +62,7 @@ namespace AutoTelemetryUI
         private void ConfigurarControles()
         {
             cmbEstacion.DataSource = Enum.GetValues(typeof(Estacion));
-            cmbEstacion.SelectedIndex = -1;
+            cmbEstacion.SelectedIndex = 0;
         }
 
         private void ConfigurarGrilla()
@@ -115,20 +116,26 @@ namespace AutoTelemetryUI
             try
             {
                 var response = await _apiClient.EnviarChasisAsync(payload);
+
                 if (response.IsSuccess)
                 {
                     dgvTelemetria.Rows[rowIndex].Cells["Estado"].Value = EstadoTelemetria.Pendiente.ToString();
+                    dgvTelemetria.Rows[rowIndex].DefaultCellStyle.BackColor = Color.LightYellow; 
                 }
                 else
                 {
-                    MessageBox.Show(response.ErrorMessage, "Error de Envío", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    string mensajeAmigable = Utils.ExtraerMensajesDeError(response.ErrorMessage);
+
+                    MessageBox.Show($"El servidor rechazó el envío:\n\n{mensajeAmigable}", "Error de Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
                     dgvTelemetria.Rows[rowIndex].Cells["Estado"].Value = EstadoTelemetria.Error_HTTP.ToString();
                     dgvTelemetria.Rows[rowIndex].DefaultCellStyle.BackColor = Color.LightCoral;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                MessageBox.Show($"No se pudo conectar con el servidor. Detalle:\n{ex.Message}", "Error de Conexión", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
                 dgvTelemetria.Rows[rowIndex].Cells["Estado"].Value = EstadoTelemetria.Error_Conexion.ToString();
                 dgvTelemetria.Rows[rowIndex].DefaultCellStyle.BackColor = Color.LightCoral;
             }
@@ -136,6 +143,8 @@ namespace AutoTelemetryUI
             {
                 btnSend.Enabled = true;
                 txtChasis.Text = "";
+
+                dgvTelemetria.ClearSelection();
             }
         }
 
@@ -168,6 +177,11 @@ namespace AutoTelemetryUI
                     break;
                 }
             }
+        }
+
+        private void dgvTelemetria_SelectionChanged(object sender, EventArgs e)
+        {
+            dgvTelemetria.ClearSelection();
         }
     }
 }

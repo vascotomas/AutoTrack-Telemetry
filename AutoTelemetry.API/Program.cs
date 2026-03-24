@@ -1,5 +1,10 @@
+using AutoTelemetryAPI.Extensions; 
 using AutoTelemetryCommon;
-using AutoTelemetryEntities;
+using AutoTelemetryEntities.Entities;
+using AutoTelemetryEntities.Interfaces;
+using AutoTelemetryInfrastructure.Context;
+using AutoTelemetryInfrastructure.NotificationsTelemetry;
+using AutoTelemetryInfrastructure.Repository;
 using AutoTelemetryWorker.Processor;
 using AutoTelemetryWorker.Worker;
 using FastEndpoints;
@@ -8,10 +13,6 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System.Threading.Channels;
 using System.Threading.RateLimiting;
-using AutoTelemetryInfrastructure.Context;
-using AutoTelemetryEntities.Entities;
-using AutoTelemetryEntities.Interfaces;
-using AutoTelemetryInfrastructure.NotificationsTelemetry;
 
 Log.Logger = LoggerSetup.Configure("API");
 
@@ -20,9 +21,11 @@ try
     Log.Information("Iniciando AutoTelemetry API");
     var builder = WebApplication.CreateBuilder(args);
     builder.Host.UseSerilog();
+
     builder.Services.AddFastEndpoints();
     builder.Services.AddOpenApi();
     builder.Services.AddHealthChecks();
+    builder.Services.AddSignalR();
 
     builder.Services.AddRateLimiter(options =>
     {
@@ -42,19 +45,17 @@ try
         new BoundedChannelOptions(16) { FullMode = BoundedChannelFullMode.Wait }
     ));
 
+    builder.Services.AddScoped<ITelemetryRepository, TelemetryRepository>();
     builder.Services.AddScoped<TelemetryProcessor>();
+    builder.Services.AddTransient<IRealTimeNotifier, SignalRNotifier>();
+
     builder.Services.AddHostedService<JobWorker>();
-    builder.Services.AddSignalR();
 
-    builder.Services.AddScoped<IRealTimeNotifier, SignalRNotifier>();
-
+    // CONSTRUCCIÓN DE LA APP
     var app = builder.Build();
 
-    using (var scope = app.Services.CreateScope())
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        dbContext.Database.EnsureCreated();
-    }
+    app.InicializarBaseDeDatos();
+
     app.UseSerilogRequestLogging();
 
     if (app.Environment.IsDevelopment())
@@ -64,11 +65,12 @@ try
 
     app.UseHttpsRedirection();
     app.UseRateLimiter();
+
     app.UseFastEndpoints();
     app.MapHealthChecks("/health");
     app.MapHub<HubTelemetry>("/telemetryHub");
-    app.Run();
 
+    app.Run();
 }
 catch (Exception ex)
 {

@@ -36,19 +36,16 @@ namespace AutoTelemetryWorker.Worker
         {
             await foreach (var msg in _channel.Reader.ReadAllAsync(ct))
             {
-                _logger.LogInformation("Mensaje desencolado. Iniciando Scope para chasis {ChasisId}. TransactionId: {TransactionId}", msg.Job?.ChasisId, msg.Job?.Id);
                 try
                 {
-                    if (msg.Job != null)
-                    {
-                        using var scope = _provider.CreateScope();
-                        var processor = scope.ServiceProvider.GetRequiredService<TelemetryProcessor>();
-                        await processor.ProcessAsync(msg.Job, ct);
-                    }
+                    using var scope = _provider.CreateScope();
+                    var processor = scope.ServiceProvider.GetRequiredService<TelemetryProcessor>();
+
+                    await processor.ProcessAsync(msg.Job, ct);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error crítico procesando el chasis {ChasisId}. TransactionId: {TransactionId}", msg.Job?.ChasisId, msg.Job?.Id);
+                    _logger.LogError(ex, "Error fatal procesando el chasis. El Worker seguirá con el próximo mensaje.");
                 }
             }
         }

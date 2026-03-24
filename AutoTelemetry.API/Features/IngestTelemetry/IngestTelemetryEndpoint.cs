@@ -1,9 +1,10 @@
-﻿using AutoTelemetryEntities.Entities;
+﻿using AutoTelemetry.Features.IngestTelemetry;
+using AutoTelemetryEntities.Entities;
 using AutoTelemetryEntities.Enums;
 using FastEndpoints;
 using System.Threading.Channels;
 
-namespace AutoTelemetry.Features.IngestTelemetry
+namespace AutoTelemetryAPI.Features.IngestTelemetry
 {
     public class IngestTelemetryEndpoint : Endpoint<IngestTelemetryRequest, IngestTelemetryResponse>
     {

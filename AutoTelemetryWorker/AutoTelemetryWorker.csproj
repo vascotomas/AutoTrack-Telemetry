@@ -15,7 +15,6 @@
   <ItemGroup>
     <ProjectReference Include="..\AutoTelemetryCommon\AutoTelemetryCommon.csproj" />
     <ProjectReference Include="..\AutoTelemetryEntities\AutoTelemetryEntities.csproj" />
-    <ProjectReference Include="..\AutoTelemetryInfrastructure\AutoTelemetryInfrastructure.csproj" />
   </ItemGroup>
 
 </Project>

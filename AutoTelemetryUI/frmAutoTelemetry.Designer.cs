@@ -28,16 +28,16 @@
         /// </summary>
         private void InitializeComponent()
         {
-            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
             txtChasis = new TextBox();
             gpInputs = new GroupBox();
+            label3 = new Label();
+            label2 = new Label();
+            label1 = new Label();
             btnSend = new Button();
             numTemperatura = new NumericUpDown();
             cmbEstacion = new ComboBox();
             dgvTelemetria = new DataGridView();
-            label1 = new Label();
-            label2 = new Label();
-            label3 = new Label();
             gpInputs.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numTemperatura).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dgvTelemetria).BeginInit();
@@ -49,7 +49,6 @@
             txtChasis.Name = "txtChasis";
             txtChasis.Size = new Size(121, 23);
             txtChasis.TabIndex = 0;
-            txtChasis.Text = "Chasis";
             // 
             // gpInputs
             // 
@@ -66,9 +65,36 @@
             gpInputs.TabIndex = 1;
             gpInputs.TabStop = false;
             // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Location = new Point(63, 145);
+            label3.Name = "label3";
+            label3.Size = new Size(74, 15);
+            label3.TabIndex = 6;
+            label3.Text = "Temperatura";
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Location = new Point(62, 88);
+            label2.Name = "label2";
+            label2.Size = new Size(51, 15);
+            label2.TabIndex = 5;
+            label2.Text = "Estacion";
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Location = new Point(62, 34);
+            label1.Name = "label1";
+            label1.Size = new Size(41, 15);
+            label1.TabIndex = 4;
+            label1.Text = "Chasis";
+            // 
             // btnSend
             // 
-            btnSend.Location = new Point(79, 192);
+            btnSend.Location = new Point(81, 213);
             btnSend.Name = "btnSend";
             btnSend.Size = new Size(75, 23);
             btnSend.TabIndex = 3;
@@ -97,43 +123,18 @@
             // 
             dgvTelemetria.AllowUserToAddRows = false;
             dgvTelemetria.AllowUserToDeleteRows = false;
-            dataGridViewCellStyle2.SelectionBackColor = Color.Transparent;
-            dataGridViewCellStyle2.SelectionForeColor = Color.Black;
-            dgvTelemetria.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle3.SelectionBackColor = Color.Gainsboro;
+            dataGridViewCellStyle3.SelectionForeColor = Color.Black;
+            dgvTelemetria.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle3;
             dgvTelemetria.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dgvTelemetria.Location = new Point(308, 22);
             dgvTelemetria.MultiSelect = false;
             dgvTelemetria.Name = "dgvTelemetria";
             dgvTelemetria.ReadOnly = true;
+            dgvTelemetria.RowHeadersVisible = false;
             dgvTelemetria.Size = new Size(540, 274);
             dgvTelemetria.TabIndex = 2;
-            // 
-            // label1
-            // 
-            label1.AutoSize = true;
-            label1.Location = new Point(62, 34);
-            label1.Name = "label1";
-            label1.Size = new Size(54, 15);
-            label1.TabIndex = 4;
-            label1.Text = "Id Chasis";
-            // 
-            // label2
-            // 
-            label2.AutoSize = true;
-            label2.Location = new Point(62, 88);
-            label2.Name = "label2";
-            label2.Size = new Size(64, 15);
-            label2.TabIndex = 5;
-            label2.Text = "Id Estacion";
-            // 
-            // label3
-            // 
-            label3.AutoSize = true;
-            label3.Location = new Point(63, 145);
-            label3.Name = "label3";
-            label3.Size = new Size(74, 15);
-            label3.TabIndex = 6;
-            label3.Text = "Temperatura";
+            dgvTelemetria.SelectionChanged += dgvTelemetria_SelectionChanged;
             // 
             // frmAutoTelemetry
             // 
@@ -142,6 +143,8 @@
             ClientSize = new Size(860, 305);
             Controls.Add(dgvTelemetria);
             Controls.Add(gpInputs);
+            FormBorderStyle = FormBorderStyle.Fixed3D;
+            MaximizeBox = false;
             Name = "frmAutoTelemetry";
             Text = "AutoTelemetry";
             gpInputs.ResumeLayout(false);
