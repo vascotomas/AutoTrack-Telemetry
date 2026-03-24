@@ -10,7 +10,6 @@
     <PackageReference Include="FastEndpoints" Version="8.0.1" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="10.0.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -25,9 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AutoTelemetryAPI.Infrastructure\AutoTelemetryAPI.Infrastructure.csproj" />
-    <ProjectReference Include="..\AutoTelemetryAPI.Entities\AutoTelemetryAPI.Entities.csproj" />
     <ProjectReference Include="..\AutoTelemetryCommon\AutoTelemetryCommon.csproj" />
+    <ProjectReference Include="..\AutoTelemetryInfrastructure\AutoTelemetryInfrastructure.csproj" />
     <ProjectReference Include="..\AutoTelemetryWorker\AutoTelemetryWorker.csproj" />
     <ProjectReference Include="..\AutoTelemetryEntities\AutoTelemetryEntities.csproj" />
   </ItemGroup>

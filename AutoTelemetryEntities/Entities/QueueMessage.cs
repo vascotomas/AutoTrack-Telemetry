@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace AutoTelemetryAPI.Entities.Entities
+namespace AutoTelemetryEntities.Entities
 {
     public class QueueMessage
     {

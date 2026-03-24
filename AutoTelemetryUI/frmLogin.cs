@@ -46,7 +46,7 @@ namespace AutoTelemetryUI
                     var jsonStr = await response.Content.ReadAsStringAsync();
                     using var doc = JsonDocument.Parse(jsonStr);
 
-                     AccessToken = doc.RootElement.GetProperty("access_token").GetString();
+                     AccessToken = doc.RootElement.GetProperty("access_token").GetString() ?? string.Empty;
                     this.DialogResult = DialogResult.OK;
                     this.Close();
                 }

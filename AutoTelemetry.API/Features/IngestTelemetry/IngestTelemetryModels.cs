@@ -1,4 +1,4 @@
-﻿namespace AutoTelemetryAPI.Features.IngestTelemetry
+﻿namespace AutoTelemetry.Features.IngestTelemetry
 {
     public class IngestTelemetryRequest
     {

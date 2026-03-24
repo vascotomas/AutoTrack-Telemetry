@@ -3,7 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using AutoTelemetryWorker.Processor;
-using AutoTelemetryAPI.Entities.Entities;
+using AutoTelemetryEntities.Entities;
 
 namespace AutoTelemetryWorker.Worker
 {
@@ -36,17 +36,19 @@ namespace AutoTelemetryWorker.Worker
         {
             await foreach (var msg in _channel.Reader.ReadAllAsync(ct))
             {
+                _logger.LogInformation("Mensaje desencolado. Iniciando Scope para chasis {ChasisId}. TransactionId: {TransactionId}", msg.Job?.ChasisId, msg.Job?.Id);
                 try
                 {
-                    _logger.LogInformation("Mensaje desencolado. Iniciando Scope para chasis {ChasisId}. TransactionId: {TransactionId}", msg.Job?.ChasisId, msg.Job?.Id);
-
-                    using var scope = _provider.CreateScope();
-                    var processor = scope.ServiceProvider.GetRequiredService<TelemetryProcessor>();
-                    await processor.ProcessAsync(msg.Job, ct);
+                    if (msg.Job != null)
+                    {
+                        using var scope = _provider.CreateScope();
+                        var processor = scope.ServiceProvider.GetRequiredService<TelemetryProcessor>();
+                        await processor.ProcessAsync(msg.Job, ct);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error crítico procesando el chasis {ChasisId}. TransactionId: {TransactionId}",msg.Job?.ChasisId, msg.Job?.Id);
+                    _logger.LogError(ex, "Error crítico procesando el chasis {ChasisId}. TransactionId: {TransactionId}", msg.Job?.ChasisId, msg.Job?.Id);
                 }
             }
         }

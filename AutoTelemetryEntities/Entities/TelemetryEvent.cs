@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using AutoTelemetryEntities.Enums;
 
-namespace AutoTelemetryAPI.Entities.Entities
+namespace AutoTelemetryEntities.Entities
 {
     public class TelemetryEvent
     {

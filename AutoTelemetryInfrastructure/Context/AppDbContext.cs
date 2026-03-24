@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Text;
-using AutoTelemetryAPI.Entities.Entities;
+using AutoTelemetryEntities.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace AutoTelemetry.Infrastructure.Context
+namespace AutoTelemetryInfrastructure.Context
 {
     public class AppDbContext : DbContext
     {

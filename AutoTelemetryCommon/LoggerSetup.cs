@@ -7,7 +7,7 @@ namespace AutoTelemetryCommon
 {
     public static class LoggerSetup
     {
-        public static ILogger Configure(string applicationName, string customPath = null)
+        public static ILogger Configure(string applicationName, string? customPath = null)
         {
 
             string filePath = customPath ?? $"logs/{applicationName.ToLower()}-log-.txt";

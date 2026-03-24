@@ -1,8 +1,5 @@
 using AutoTelemetryCommon;
-using AutoTelemetry.Infrastructure.Context;
-using AutoTelemetryAPI.Entities.Entities;
-using AutoTelemetryAPI.Features.NotificationsTelemetry;
-using AutoTelemetryWorker.Interfaces;
+using AutoTelemetryEntities;
 using AutoTelemetryWorker.Processor;
 using AutoTelemetryWorker.Worker;
 using FastEndpoints;
@@ -11,6 +8,10 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System.Threading.Channels;
 using System.Threading.RateLimiting;
+using AutoTelemetryInfrastructure.Context;
+using AutoTelemetryEntities.Entities;
+using AutoTelemetryEntities.Interfaces;
+using AutoTelemetryInfrastructure.NotificationsTelemetry;
 
 Log.Logger = LoggerSetup.Configure("API");
 
@@ -45,7 +46,7 @@ try
     builder.Services.AddHostedService<JobWorker>();
     builder.Services.AddSignalR();
 
-    builder.Services.AddScoped<ITelemetryNotifier, SignalRNotifier>();
+    builder.Services.AddScoped<IRealTimeNotifier, SignalRNotifier>();
 
     var app = builder.Build();
 

@@ -1,25 +1,17 @@
-﻿using AutoTelemetry.Infrastructure.Context;
-using AutoTelemetryAPI.Entities;
-using AutoTelemetryAPI.Entities.Entities;
-using AutoTelemetryWorker.Interfaces;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Microsoft.Extensions.Logging;
 using AutoTelemetryEntities.Enums;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Linq;
-
+using AutoTelemetryEntities.Entities;
+using AutoTelemetryInfrastructure.Context;
+using AutoTelemetryEntities.Interfaces;
 namespace AutoTelemetryWorker.Processor
 {
     public class TelemetryProcessor
     {
         private readonly AppDbContext _dbContext;
         private readonly ILogger<TelemetryProcessor> _logger;
-        private readonly ITelemetryNotifier _notifier;
+        private readonly IRealTimeNotifier _notifier;
 
-        public TelemetryProcessor(AppDbContext dbContext, ILogger<TelemetryProcessor> logger, ITelemetryNotifier notifier)
+        public TelemetryProcessor(AppDbContext dbContext, ILogger<TelemetryProcessor> logger, IRealTimeNotifier notifier)
         {
             _dbContext = dbContext;
             _logger = logger;
@@ -37,7 +29,7 @@ namespace AutoTelemetryWorker.Processor
             {
                 _logger.LogWarning("El chasis {ChasisId} ya existe. Descartando procesamiento. TransactionId: {TransactionId}",evento.ChasisId, evento.Id);
 
-                await _notifier.NotifyStatusChangedAsync(evento.Id, EstadoTelemetria.Error_Duplicado, ct);
+                await _notifier.BroadcastEventAsync("TelemetryProcessed", evento.Id, EstadoTelemetria.Error_Duplicado.ToString(), ct);
                 return;
             }
 
@@ -61,7 +53,7 @@ namespace AutoTelemetryWorker.Processor
 
             _logger.LogInformation("Chasis {ChasisId} guardado exitosamente con estado: {Estado}. TransactionId: {TransactionId}", evento.ChasisId, evento.Estado, evento.Id);
 
-            await _notifier.NotifyStatusChangedAsync(evento.Id, evento.Estado, ct);
+            await _notifier.BroadcastEventAsync("TelemetryProcessed", evento.Id, evento.Estado.ToString(), ct);
         }
     }
 }

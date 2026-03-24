@@ -7,10 +7,11 @@ namespace AutoTelemetryUI
 {
     public partial class frmAutoTelemetry : Form
     {
-        private readonly string _token;
-        private HubConnection? _hubConnection;
-        private static string apiUrl;
-        private Client _apiClient;
+        private readonly string _token = null!;
+        private static string apiUrl = null!;
+        private Client _apiClient = null!;
+        private ClientSignalR _clientSignalR = null!;
+
         public frmAutoTelemetry(string token)
         {
             InitializeComponent();
@@ -18,49 +19,51 @@ namespace AutoTelemetryUI
             ConfigurarConexiones();
             ConfigurarControles();
             ConfigurarGrilla();
-            ConfigurarSignalRAsync();
         }
-        private void ConfigurarConexiones()
+
+        private async void ConfigurarConexiones()
         {
             apiUrl = ConfigurationManager.AppSettings["ApiUrl"] ?? "https://localhost:7105";
             _apiClient = new Client(apiUrl, _token);
+
+            await IniciarConexionSignalRAsync();
         }
+
+        private async Task IniciarConexionSignalRAsync()
+        {
+            _clientSignalR = new ClientSignalR($"{apiUrl}/telemetryHub", _token);
+
+            _clientSignalR.SuscribirEvento<Guid, string>("TelemetryProcessed", InvocarActualizacionTelemetria);
+
+            bool conectado = await _clientSignalR.ConectarAsync();
+
+            if (conectado)
+            {
+                this.Text = "Panel de Telemetría - Conectado (SignalR)";
+            }
+            else
+            {
+                this.Text = "Panel de Telemetría - Desconectado (Trabajando Offline)";
+            }
+        }
+
+        private void InvocarActualizacionTelemetria(Guid idTransaccion, string estadoString)
+        {
+            if (Enum.TryParse<EstadoTelemetria>(estadoString, out var estadoEnum))
+            {
+                this.Invoke((MethodInvoker)delegate
+                {
+                    ActualizarFilaGrilla(idTransaccion, estadoEnum);
+                });
+            }
+        }
+
         private void ConfigurarControles()
         {
             cmbEstacion.DataSource = Enum.GetValues(typeof(Estacion));
             cmbEstacion.SelectedIndex = -1;
         }
-        private async void ConfigurarSignalRAsync()
-        {
-            _hubConnection = new HubConnectionBuilder()
-                                                      .WithUrl($"{apiUrl}/telemetryHub", options =>
-                                                      {
-                                                          options.AccessTokenProvider = () => Task.FromResult(_token);
-                                                      })
-                                                      .WithAutomaticReconnect()
-                                                      .Build();
 
-            _hubConnection.On<Guid, EstadoTelemetria>("TelemetryProcessed", (idTransaccion, estado) =>
-            {
-                if (Enum.TryParse<EstadoTelemetria>(estado.ToString(), out var estadoEnum))
-                {
-                    this.Invoke((MethodInvoker)delegate
-                    {
-                        ActualizarFilaGrilla(idTransaccion, estadoEnum);
-                    });
-                }
-            });
-
-            try
-            {
-                await _hubConnection.StartAsync();
-                this.Text = "Panel de Telemetría - Conectado (SignalR)";
-            }
-            catch (Exception)
-            {
-                this.Text = "Panel de Telemetría - Desconectado";
-            }
-        }
         private void ConfigurarGrilla()
         {
             dgvTelemetria.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
@@ -75,6 +78,7 @@ namespace AutoTelemetryUI
             dgvTelemetria.Columns.Add("Temperatura", "Temperatura (°C)");
             dgvTelemetria.Columns.Add("Estado", "Estado");
         }
+
         private async void btnSend_Click(object sender, EventArgs e)
         {
             var chasis = txtChasis.Text;

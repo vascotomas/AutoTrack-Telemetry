@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using FluentValidation;
 
-namespace AutoTelemetryAPI.Features.IngestTelemetry
+namespace AutoTelemetry.Features.IngestTelemetry
 {
     public class IngestTelemetryValidator : Validator<IngestTelemetryRequest>
     {
