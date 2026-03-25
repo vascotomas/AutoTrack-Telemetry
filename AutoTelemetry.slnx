@@ -4,6 +4,7 @@
   <Project Path="AutoTelemetryEntities/AutoTelemetryEntities.csproj" />
   <Project Path="AutoTelemetryInfrastructure/AutoTelemetryInfrastructure.csproj" />
   <Project Path="AutoTelemetryUI/AutoTelemetryUI.csproj" Id="bdbc14a5-39fb-4066-a7bc-2ac8b992a3e3" />
+  <Project Path="AutoTelemetryBlazor/AutoTelemetryBlazor.csproj" />
   <Project Path="AutoTelemetryWorker/AutoTelemetryWorker.csproj" />
   <Project Path="ClientSDK/ClientSDK.csproj" />
 </Solution>

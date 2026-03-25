@@ -1,0 +1,240 @@
+@page "/telemetry"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@implements IAsyncDisposable
+
+<PageTitle>@_pageTitle</PageTitle>
+
+<div class="container-fluid py-3">
+    <h1 class="h4 mb-3">@_pageTitle</h1>
+
+    @if (!string.IsNullOrEmpty(_httpAlert))
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert" style="white-space: pre-wrap">
+            @_httpAlert
+            <button type="button" class="btn-close" @onclick="@(() => _httpAlert = null)" aria-label="Cerrar"></button>
+        </div>
+    }
+
+    <div class="row g-3">
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">Datos del sensor</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="chasis">Chasis</label>
+                        <input id="chasis" class="form-control" @bind="_chasis" @bind:event="oninput" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="estacion">Estación</label>
+                        <select id="estacion" class="form-select" @bind="_estacion">
+                            @foreach (var e in Enum.GetValues<Estacion>())
+                            {
+                                <option value="@e">@e</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="temp">Temperatura</label>
+                        <input id="temp" type="number" class="form-control" step="0.1" min="-20" max="200" @bind="_temperatura" />
+                    </div>
+                    <button type="button" class="btn btn-primary" disabled="@_sending" @onclick="EnviarAsync">Enviar</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="table-responsive border rounded">
+                <table class="table table-sm table-striped table-telemetry mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID Chasis</th>
+                            <th>Estación</th>
+                            <th>Temperatura (°C)</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in _rows)
+                        {
+                            <tr class="@row.CssClass">
+                                <td>@row.ChasisId</td>
+                                <td>@row.Estacion</td>
+                                <td>@row.Temperatura</td>
+                                <td>@row.EstadoDisplay</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject] private Client Client { get; set; } = default!;
+    [Inject] private AuthSession AuthSession { get; set; } = default!;
+    [Inject] private IConfiguration Configuration { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private string _pageTitle = "AutoTelemetry";
+    private string? _httpAlert;
+    private string _chasis = "";
+    private Estacion _estacion = Estacion.Chasis;
+    private double _temperatura;
+    private bool _sending;
+    private ClientSignalR? _clientSignalR;
+    private readonly List<TelemetryRowVm> _rows = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(AuthSession.AccessToken))
+        {
+            await InvokeAsync(() => Navigation.NavigateTo("/login", replace: false));
+            return;
+        }
+
+        Client.SetAuthorizationToken(AuthSession.AccessToken!);
+
+        var apiUrl = Configuration["ApiUrl"] ?? "https://localhost:7105";
+        await IniciarConexionSignalRAsync(apiUrl);
+    }
+
+    private async Task IniciarConexionSignalRAsync(string apiUrl)
+    {
+        try
+        {
+            _clientSignalR = new ClientSignalR($"{apiUrl.TrimEnd('/')}/telemetryHub", AuthSession.AccessToken!);
+            _clientSignalR.SuscribirEvento<Guid, string>("TelemetryProcessed", OnTelemetryProcessed);
+
+            var conectado = await _clientSignalR.ConectarAsync();
+            _pageTitle = conectado
+                ? "Panel de Telemetría - Conectado (SignalR)"
+                : "Panel de Telemetría - Desconectado (Fallo interno)";
+        }
+        catch
+        {
+            _pageTitle = "Panel de Telemetría - Servidor Offline";
+        }
+    }
+
+    private void OnTelemetryProcessed(Guid idTransaccion, string estadoString)
+    {
+        if (!Enum.TryParse<EstadoTelemetria>(estadoString, out var estadoEnum))
+            return;
+
+        _ = InvokeAsync(() =>
+        {
+            ActualizarFila(idTransaccion, estadoEnum);
+            StateHasChanged();
+        });
+    }
+
+    private async Task EnviarAsync()
+    {
+        var chasis = _chasis.Trim();
+        var estacion = _estacion.ToString();
+        var temp = _temperatura;
+
+        if (string.IsNullOrWhiteSpace(chasis) || string.IsNullOrWhiteSpace(estacion))
+        {
+            _httpAlert = "Completá los datos del sensor.";
+            return;
+        }
+
+        _httpAlert = null;
+
+        var idTransaccion = Guid.NewGuid();
+        _rows.Add(new TelemetryRowVm
+        {
+            IdTransaccion = idTransaccion,
+            ChasisId = chasis,
+            Estacion = estacion,
+            Temperatura = temp,
+            EstadoDisplay = EstadoTelemetria.Enviando.ToString(),
+            CssClass = CssAmarillo
+        });
+
+        var apiUrl = Configuration["ApiUrl"] ?? "https://localhost:7105";
+        var payload = new
+        {
+            Id = idTransaccion,
+            ChasisId = chasis,
+            Estacion = estacion,
+            Temperatura = temp
+        };
+
+        _sending = true;
+        try
+        {
+            var response = await Client.EnviarChasisAsync(apiUrl, payload);
+            var row = _rows.First(r => r.IdTransaccion == idTransaccion);
+
+            if (response.IsSuccess)
+            {
+                row.EstadoDisplay = EstadoTelemetria.Pendiente.ToString();
+                row.CssClass = CssAmarillo;
+            }
+            else
+            {
+                var mensajeAmigable = Utils.ExtraerMensajesDeError(response.ErrorMessage);
+                _httpAlert = $"El servidor rechazó el envío:\n\n{mensajeAmigable}";
+                row.EstadoDisplay = EstadoTelemetria.Error_HTTP.ToString().Replace("_", " ");
+                row.CssClass = CssRojo;
+            }
+        }
+        catch (Exception ex)
+        {
+            _httpAlert = $"No se pudo conectar con el servidor. Detalle:\n{ex.Message}";
+            var row = _rows.First(r => r.IdTransaccion == idTransaccion);
+            row.EstadoDisplay = EstadoTelemetria.Error_Conexion.ToString().Replace("_", " ");
+            row.CssClass = CssRojo;
+        }
+        finally
+        {
+            _sending = false;
+            _chasis = "";
+        }
+    }
+
+    private void ActualizarFila(Guid idTransaccion, EstadoTelemetria nuevoEstado)
+    {
+        var row = _rows.FirstOrDefault(r => r.IdTransaccion == idTransaccion);
+        if (row is null)
+            return;
+
+        row.EstadoDisplay = nuevoEstado.ToString().Replace("_", " ");
+        row.CssClass = ClaseCssParaEstado(nuevoEstado);
+    }
+
+    private const string CssAmarillo = "telemetry-row-yellow";
+    private const string CssRojo = "telemetry-row-red";
+    private const string CssVerde = "telemetry-row-green";
+
+    private static string ClaseCssParaEstado(EstadoTelemetria estado) => estado switch
+    {
+        EstadoTelemetria.Enviando => CssAmarillo,
+        EstadoTelemetria.Pendiente => CssAmarillo,
+        EstadoTelemetria.Procesado => CssVerde,
+        EstadoTelemetria.Alerta_Temperatura => CssRojo,
+        EstadoTelemetria.Error_Duplicado => CssRojo,
+        EstadoTelemetria.Error_Conexion => CssRojo,
+        EstadoTelemetria.Error_HTTP => CssRojo,
+        EstadoTelemetria.Error_Critico => CssRojo,
+        _ => string.Empty
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_clientSignalR is not null)
+            await _clientSignalR.DesconectarAsync();
+    }
+
+    private sealed class TelemetryRowVm
+    {
+        public Guid IdTransaccion { get; init; }
+        public string ChasisId { get; init; } = "";
+        public string Estacion { get; init; } = "";
+        public double Temperatura { get; init; }
+        public string EstadoDisplay { get; set; } = "";
+        public string CssClass { get; set; } = "";
+    }
+}

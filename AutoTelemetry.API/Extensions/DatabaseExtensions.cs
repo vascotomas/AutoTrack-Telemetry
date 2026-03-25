@@ -11,7 +11,6 @@ namespace AutoTelemetryAPI.Extensions
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             dbContext.Database.EnsureCreated();
-
         }
     }
 }
